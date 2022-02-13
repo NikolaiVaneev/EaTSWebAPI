@@ -38,7 +38,6 @@ builder.Services.AddSwaggerGen(setup =>
     {
         { jwtSecurityScheme, Array.Empty<string>() }
     });
-
 });
 
 builder.Services.AddSwaggerGen(options =>
@@ -67,11 +66,14 @@ builder.Services.AddSwaggerGen(options =>
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     options.IncludeXmlComments(xmlPath);
-   
-
 });
 
-
+builder.Services.AddCors(c =>
+{
+    c.AddPolicy("VueCorsPolicy", builder => {
+        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -99,6 +101,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
+
+
+app.UseCors(builder =>
+{
+    builder.WithOrigins("http://localhost:8080")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
