@@ -1,5 +1,6 @@
 ﻿using EaTSWebAPI.Data;
 using EaTSWebAPI.Models;
+using EaTSWebAPI.Models.Agencyes;
 using EaTSWebAPI.Models.Users;
 using EaTSWebAPI.Service;
 using EaTSWebAPI.Service.Extensions;
@@ -83,6 +84,76 @@ namespace EaTSWebAPI.Controllers
         public IActionResult AuthorizationCheck()
         {
             return Ok("Ура! Вы авторизированы!");
+        }
+
+
+        /// <summary>
+        /// Создать пользователя
+        /// </summary>
+        /// <param name="userVM"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///        "name": "Иванов И.И.",
+        ///        "login": "mylogin",
+        ///        "password": "mypassword",
+        ///        "phone": "33-14",
+        ///        "email": "ik5.itso@tatarstan.fsin.uis",
+        ///        "agencyId": 10
+        ///     }
+        ///
+        /// </remarks>
+        [Route("/Account/Create")]
+        [HttpPost]
+        public async Task<IActionResult> Create(UserVM userVM)
+        {
+            if (userVM == null)
+            {
+                return BadRequest("Object is null");
+            }
+
+            if (string.IsNullOrWhiteSpace(userVM.Name) || 
+                string.IsNullOrWhiteSpace(userVM.Phone) || 
+                string.IsNullOrWhiteSpace(userVM.Email))
+            {
+                return BadRequest("Входные данные не корректны");
+            }
+
+            if (string.IsNullOrWhiteSpace(userVM.Password) ||
+                string.IsNullOrWhiteSpace(userVM.Login))
+            {
+                return BadRequest("Логин и пароль не должны быть пустыми");
+            }
+
+            var userAgency = _db.Agency.Find(userVM.AgencyId);
+            if (userAgency == null)
+            {
+                return BadRequest("Учреждение не найдено");
+            }
+
+            if (_db.User.Where(p => p.Login == userVM.Login).Any())
+            {
+                return BadRequest("Данный логин уже используется");
+            }
+
+            User user = new();
+            user.Name = userVM.Name;
+            user.Phone = userVM.Phone;
+            user.Email = userVM.Email;
+            user.Login = userVM.Login;
+            user.Password = userVM.Password;
+            user.Role = UserRole.User;
+            user.Agency = userAgency;
+            user.IsActive = false;
+
+
+            ////////////////////////////////////////
+            _db.User.Add(user);
+            await _db.SaveChangesAsync();
+
+            return Ok(user);
         }
 
         private IdentityResponse? GetIdentity(string username, string password)

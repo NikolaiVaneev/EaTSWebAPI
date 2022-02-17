@@ -251,10 +251,11 @@ namespace EaTSWebAPI.Controllers
                 return BadRequest("Object data is not correct (unique identificator)");
             }
 
-            if (_db.Agency.Where(a => a.Name == agencyVM.Name || a.ShortName == agencyVM.ShortName).Any())
-            {
-                return BadRequest("Object already exists in the database");
-            }
+            //if (_db.Agency.Where(a => a.Name == agencyVM.Name || a.ShortName == agencyVM.ShortName).Any())
+            //{
+                
+            //    return BadRequest("Object already exists in the database");
+            //}
 
             var agency = _db.Agency.Find(agencyVM.Id);
 
