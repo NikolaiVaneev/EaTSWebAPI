@@ -193,6 +193,154 @@ namespace EaTSWebAPI.Controllers
             return Ok(user);
         }
 
+        /// <summary>
+        /// Изменить роль и (или) статус пользователя
+        /// </summary>
+        /// <param name="userVM"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///        "id": 1,
+        ///        "role": 1,
+        ///        "isActive": true
+        ///     }
+        ///     or
+        ///     {
+        ///        "id": 1,
+        ///        "role": 2
+        ///     }
+        ///
+        /// </remarks>
+        [AuthorizeRoles(UserRole.Administrator)]
+        [Route("/Account/UpdateStatusOrRole")]
+        [HttpPut]
+        public async Task<IActionResult> UpdateAdminData(UserVM userVM)
+        {
+            if (userVM == null)
+            {
+                return BadRequest("Object is null");
+            }
+
+            if (userVM.Id == null)
+            {
+                return BadRequest("Отсутствует уникальный идентификатор пользователя");
+            }
+
+            var user = _db.User.Find(userVM.Id);
+
+            if (user == null)
+            {
+                return BadRequest("Пользователь не найден");
+            }
+
+
+            if (userVM.Role != null)
+            {
+                user.Role = (UserRole)userVM.Role;
+            }
+
+            if (userVM.IsActive != null)
+            {
+                user.IsActive = (bool)userVM.IsActive;
+            }
+
+           // _db.Entry(user).CurrentValues.SetValues(userVM);
+            ////////////////////////////////////////
+            _db.User.Update(user);
+            await _db.SaveChangesAsync();
+
+            return Ok(user);
+        }
+
+        /// <summary>
+        /// Изменить данные пользователя
+        /// </summary>
+        /// <param name="userVM"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///          "id": 1,
+        ///          "name": "Петров А.В.",
+        ///          "password": "pass",
+        ///          "phone": "11-11",
+        ///          "email": "petrov@fsin.uis"
+        ///     }
+        ///     or
+        ///     {
+        ///          "id": 1,
+        ///          "password": "string"
+        ///     }
+        ///
+        /// </remarks>
+        //[AuthorizeRoles(UserRole.User), AuthorizeRoles(UserRole.Curator)]
+        [Authorize]
+        [Route("/Account/Update")]
+        [HttpPut]
+        public async Task<IActionResult> Update(UserVM userVM)
+        {
+            string senderUserName = string.Empty;
+
+            if (userVM == null)
+            {
+                return BadRequest("Object is null");
+            }
+
+            if (userVM.Id == null)
+            {
+                return BadRequest("Отсутствует уникальный идентификатор пользователя");
+            }
+
+
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                senderUserName = identity.Name;
+            }
+            else
+            {
+                return BadRequest("Ошибка авторизации");
+            }
+
+            var user = _db.User.Where(u => u.Login == senderUserName).FirstOrDefault();
+
+            if (user == null)
+            {
+                return BadRequest("Пользователь не найден");
+            }
+
+            if (user.Id != userVM.Id)
+            {
+                return BadRequest("Попытка изменения данных чужого аккаунта");
+            }
+
+            if (userVM.Name != null)
+            {
+                user.Name = userVM.Name;
+            }
+            if (userVM.Password != null)
+            {
+                user.Password = userVM.Password;
+            }
+            if (userVM.Phone != null)
+            {
+                user.Phone = userVM.Phone;
+            }
+            if (userVM.Email != null)
+            {
+                user.Email = userVM.Email;
+            }
+
+            ////////////////////////////////////////
+            _db.User.Update(user);
+            await _db.SaveChangesAsync();
+
+            return Ok(user);
+        }
+
         private IdentityResponse? GetIdentity(string username, string password)
         {
             User user = _db.User.Include(a => a.Agency).FirstOrDefault(u => u.Login == username && u.Password == password);
