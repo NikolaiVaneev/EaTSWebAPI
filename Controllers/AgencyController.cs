@@ -154,6 +154,43 @@ namespace EaTSWebAPI.Controllers
         }
 
         /// <summary>
+        /// Получить учреждения (учреждение)
+        /// </summary>
+        /// <param name="id">ИД</param>
+        /// <returns></returns>
+        /// <remarks>
+        /// 
+        /// Получение всех учреждений:
+        /// Agencyes/Get/
+        /// 
+        /// Получение конкретное учреждение:
+        /// Agencyes/Get/1
+        /// 
+        /// </remarks>
+        [Route("Get/{id?}")]
+        [HttpGet]
+        public async Task<ActionResult> GetAgency(int? id)
+        {
+            if (id == null)
+            {
+                return Ok(_db.Agency.Include(t => t.AgencyType).AsNoTracking());
+            }
+            else
+            {
+                var obj = await _db.Agency.Include(t => t.AgencyType).AsNoTracking().Where(a => a.Id == id).FirstOrDefaultAsync();
+                if (obj == null)
+                {
+                    return BadRequest("Учреждение не найдено");
+                }
+                else
+                {
+                    return Ok(obj);
+                }
+
+            }
+        }
+
+        /// <summary>
         /// Создать новое учреждение
         /// </summary>
         /// <param name="agencyVM"></param>
