@@ -8,7 +8,7 @@ using static EaTSWebAPI.WC;
 
 namespace EaTSWebAPI.Controllers
 {
-    [Authorize]
+
     [ApiController]
     [Produces("application/json")]
     [Route("[controller]")]
@@ -294,7 +294,7 @@ namespace EaTSWebAPI.Controllers
         }
 
         /// <summary>
-        /// Удалить учреждения
+        /// Удалить учреждение
         /// </summary>
         /// <param name="agencyVM"></param>
         /// <returns></returns>

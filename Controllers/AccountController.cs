@@ -16,6 +16,7 @@ namespace EaTSWebAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
+    [Produces("application/json")]
     public class AccountController : ControllerBase
     {
         public AccountController(ApplicationDbContext db)
@@ -86,6 +87,42 @@ namespace EaTSWebAPI.Controllers
             return Ok("Ура! Вы авторизированы!");
         }
 
+        /// <summary>
+        /// Получить данные пользователей (пользователя)
+        /// </summary>
+        /// <param name="id">ИД</param>
+        /// <returns></returns>
+        /// <remarks>
+        /// 
+        /// Получение всех пользователей:
+        /// Account/Get/
+        /// 
+        /// Получение конкретного пользователя:
+        /// Account/Get/1
+        /// 
+        /// </remarks>
+        [Route("Get/{id?}")]
+        [HttpGet]
+        public async Task<IActionResult> Get(int? id = null)
+        {
+            if (id == null)
+            {
+                return Ok(_db.User.Include(a => a.Agency));
+            }
+            else
+            {
+                var user = _db.User.Include(a => a.Agency).Where(u => u.Id == id).FirstOrDefault();
+                if (user == null)
+                {
+                    return BadRequest("Пользователь не найден");
+                }
+                else
+                {
+                    return Ok(user);
+                }
+                
+            }
+        }
 
         /// <summary>
         /// Создать пользователя
