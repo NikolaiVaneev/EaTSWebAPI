@@ -107,7 +107,14 @@ namespace EaTSWebAPI.Controllers
         {
             if (id == null)
             {
-                return Ok(_db.User.Include(a => a.Agency));
+                //if (paginator != null)
+                //{ 
+                //    return Ok(_db.User.Include(a => a.Agency).Skip(paginator.PageNumber * paginator.PageSize).Take(paginator.PageNumber * 2 * paginator.PageSize));
+                //}
+                //else
+                { 
+                    return Ok(_db.User.Include(a => a.Agency));
+                }
             }
             else
             {
@@ -120,7 +127,7 @@ namespace EaTSWebAPI.Controllers
                 {
                     return Ok(user);
                 }
-                
+
             }
         }
 
@@ -151,8 +158,8 @@ namespace EaTSWebAPI.Controllers
                 return BadRequest("Object is null");
             }
 
-            if (string.IsNullOrWhiteSpace(userVM.Name) || 
-                string.IsNullOrWhiteSpace(userVM.Phone) || 
+            if (string.IsNullOrWhiteSpace(userVM.Name) ||
+                string.IsNullOrWhiteSpace(userVM.Phone) ||
                 string.IsNullOrWhiteSpace(userVM.Email))
             {
                 return BadRequest("Входные данные не корректны");
@@ -246,7 +253,7 @@ namespace EaTSWebAPI.Controllers
                 user.IsActive = (bool)userVM.IsActive;
             }
 
-           // _db.Entry(user).CurrentValues.SetValues(userVM);
+            // _db.Entry(user).CurrentValues.SetValues(userVM);
             ////////////////////////////////////////
             _db.User.Update(user);
             await _db.SaveChangesAsync();
