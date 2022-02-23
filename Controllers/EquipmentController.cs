@@ -20,14 +20,42 @@ namespace EaTSWebAPI.Controllers
 
 
         /// <summary>
-        /// Получить список видов оборудования
+        /// Получить вид(ы) оборудования
         /// </summary>
         /// <returns></returns>
-        [Route("/EquipmentTypes")]
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///         EquipmentTypes/Get/
+        ///     }
+        ///     or
+        ///     {
+        ///        EquipmentTypes/Get/2
+        ///     }
+        ///
+        /// </remarks>
+        [Route("/EquipmentTypes/Get/{id?}")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<EquipmentType>>> GetAllTypes()
+        public async Task<ActionResult<IEnumerable<EquipmentType>>> GetTypes(int? id)
         {
-            return await _db.EquipmentType.Include(a => a.Classes).ThenInclude(c => c.Equipments).ToListAsync();
+            if (id == null)
+            {
+                return await _db.EquipmentType.Include(a => a.Classes).ThenInclude(c => c.Equipments).ToListAsync();
+            }
+            else
+            {
+                var obj = await _db.EquipmentType.Include(t => t.Classes).ThenInclude(c => c.Equipments).AsNoTracking().Where(a => a.Id == id).FirstOrDefaultAsync();
+                if (obj == null)
+                {
+                    return BadRequest("Вид не найден");
+                }
+                else
+                {
+                    return Ok(obj);
+                }
+            }
+            
         }
 
         /// <summary>
