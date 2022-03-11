@@ -18,7 +18,7 @@ namespace EaTSWebAPI.Controllers
         }
         private readonly ApplicationDbContext _db;
 
-        #region типы оборудования
+        #region Типы оборудования
         /// <summary>
         /// Получить вид(ы) оборудования
         /// </summary>
@@ -160,13 +160,13 @@ namespace EaTSWebAPI.Controllers
         [HttpDelete]
         public async Task<ActionResult> DeleteEquipmentType(int id)
         {
-            var equipmentType = _db.EquipmentType.Find(id);
-            if (equipmentType == null)
+            var obj = _db.EquipmentType.Find(id);
+            if (obj == null)
             {
                 return BadRequest("Объект не найден в базе данных");
             }
 
-            _db.EquipmentType.Remove(equipmentType);
+            _db.EquipmentType.Remove(obj);
             await _db.SaveChangesAsync();
 
             return Ok("Объект удален из базы данных");
@@ -213,8 +213,8 @@ namespace EaTSWebAPI.Controllers
         /// <summary>
         /// Создать новый класс оборудования
         /// </summary>
-        /// <param name="type"></param>
-        /// <returns>объект Вид оборудования</returns>
+        /// <param name="obj"></param>
+        /// <returns>объект Класс оборудования</returns>
         /// <remarks>
         /// Sample request:
         ///
@@ -226,7 +226,7 @@ namespace EaTSWebAPI.Controllers
         ///     }
         ///
         /// </remarks>
-      //  [AuthorizeRoles(UserRole.Administrator)]
+        [AuthorizeRoles(UserRole.Administrator)]
         [Route("/EquipmentClasses/Create")]
         [HttpPost]
         public async Task<ActionResult> CreateEquipmentClass(EquipmentClassVM obj)
@@ -271,8 +271,97 @@ namespace EaTSWebAPI.Controllers
             return Ok(eqClass);
         }
 
+        /// <summary>
+        /// Изменить класс оборудования
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>объект Класс оборудования</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///        "id": 1,
+        ///        "equipmenttypeId": 1,
+        ///        "fullname": "Радиоволновой охранный извещатель",
+        ///        "shortname": "РВОИ",
+        ///        "isRepair" : true
+        ///     }
+        ///
+        /// </remarks>
+        [AuthorizeRoles(UserRole.Administrator)]
+        [Route("/EquipmentClasses/Edit")]
+        [HttpPut]
+        public async Task<ActionResult> EditEquipmentClass(EquipmentClassVM obj)
+        {
+            if (obj == null)
+            {
+                return BadRequest("Object is null");
+            }
 
+            // Проверка на наличие типа в БД
+            var type = _db.EquipmentType.Find(obj.EquipmentTypeId);
+            if (type == null)
+            {
+                return BadRequest("Тип оборудования не найден в БД");
+            }
 
+            // Проверка на пустые строки
+            if (string.IsNullOrWhiteSpace(obj.FullName) || string.IsNullOrWhiteSpace(obj.ShortName))
+            {
+                return BadRequest("Object data is not correct (name or shortname is empty)");
+            }
+
+            var oldObj = _db.EquipmentClass.AsNoTracking().Where(u => u.Id == obj.Id).FirstOrDefault();
+            if (oldObj == null)
+            {
+                return BadRequest("Класс оборудования не найден в БД");
+            }
+
+            var eqClass = new EquipmentClass
+            {
+                Id = oldObj.Id,
+                EqupmentType = type,
+                ShortName = obj.ShortName,
+                FullName = obj.FullName,
+                IsRepair = obj.IsRepair
+            };
+
+            ////////////////////////////////////////
+            _db.EquipmentClass.Update(eqClass);
+            await _db.SaveChangesAsync();
+
+            return Ok(eqClass);
+        }
+
+        /// <summary>
+        /// Удалить класс оборудования
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>объект Класс оборудования</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///        "id": 1
+        ///     }
+        ///
+        /// </remarks>
+        [AuthorizeRoles(UserRole.Administrator)]
+        [Route("/EquipmentClasses/Delete")]
+        [HttpDelete]
+        public async Task<ActionResult> DeleteEquipmentClass(int id)
+        {
+            var obj = _db.EquipmentClass.Find(id);
+            if (obj == null)
+            {
+                return BadRequest("Объект не найден в базе данных");
+            }
+
+            _db.EquipmentClass.Remove(obj);
+            await _db.SaveChangesAsync();
+
+            return Ok("Объект удален из базы данных");
+        }
         #endregion
     }
 }
