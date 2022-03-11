@@ -18,7 +18,7 @@ namespace EaTSWebAPI.Controllers
         }
         private readonly ApplicationDbContext _db;
 
-
+        #region типы оборудования
         /// <summary>
         /// Получить вид(ы) оборудования
         /// </summary>
@@ -26,13 +26,9 @@ namespace EaTSWebAPI.Controllers
         /// <remarks>
         /// Sample request:
         ///
-        ///     {
         ///         EquipmentTypes/Get/
-        ///     }
         ///     or
-        ///     {
         ///        EquipmentTypes/Get/2
-        ///     }
         ///
         /// </remarks>
         [Route("/EquipmentTypes/Get/{id?}")]
@@ -55,7 +51,7 @@ namespace EaTSWebAPI.Controllers
                     return Ok(obj);
                 }
             }
-            
+
         }
 
         /// <summary>
@@ -175,5 +171,108 @@ namespace EaTSWebAPI.Controllers
 
             return Ok("Объект удален из базы данных");
         }
+
+        #endregion
+
+        #region Классы оборудования
+        /// <summary>
+        /// Получить класс(ы) оборудования
+        /// </summary>
+        /// <returns></returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///        EquipmentClasses/Get/
+        ///     or
+        ///        EquipmentClasses/Get/2
+        ///
+        /// </remarks>
+        [Route("/EquipmentClasses/Get/{id?}")]
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<EquipmentClass>>> GetClasses(int? id)
+        {
+            if (id == null)
+            {
+                return await _db.EquipmentClass.Include(a => a.Equipments).ToListAsync();
+            }
+            else
+            {
+                var obj = await _db.EquipmentClass.Include(c => c.Equipments).AsNoTracking().Where(a => a.Id == id).FirstOrDefaultAsync();
+                if (obj == null)
+                {
+                    return BadRequest("Класс не найден");
+                }
+                else
+                {
+                    return Ok(obj);
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Создать новый класс оборудования
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns>объект Вид оборудования</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///        "equipmenttypeId": 1,
+        ///        "fullname": "Радиоволновой охранный извещатель",
+        ///        "shortname": "РВОИ",
+        ///        "isRepair" : true
+        ///     }
+        ///
+        /// </remarks>
+      //  [AuthorizeRoles(UserRole.Administrator)]
+        [Route("/EquipmentClasses/Create")]
+        [HttpPost]
+        public async Task<ActionResult> CreateEquipmentClass(EquipmentClassVM obj)
+        {
+            if (obj == null)
+            {
+                return BadRequest("Object is null");
+            }
+
+            // Проверка на наличие типа в БД
+            var type = _db.EquipmentType.Find(obj.EquipmentTypeId);
+            if (type == null)
+            {
+                return BadRequest("Тип оборудования не найден в БД");
+            }
+
+            // Проверка на пустые строки
+            if (string.IsNullOrWhiteSpace(obj.FullName) || string.IsNullOrWhiteSpace(obj.ShortName))
+            {
+                return BadRequest("Object data is not correct (name or shortname is empty)");
+            }
+
+            if (_db.EquipmentClass.Where(a => a.FullName == obj.FullName).Any())
+            {
+                return BadRequest("Класс с таким именем уже существует в базе данных");
+            }
+
+
+
+            var eqClass = new EquipmentClass
+            {
+                EqupmentType = type,
+                ShortName = obj.ShortName,
+                FullName = obj.FullName,
+                IsRepair = obj.IsRepair
+            };
+
+            ////////////////////////////////////////
+            _db.EquipmentClass.Add(eqClass);
+            await _db.SaveChangesAsync();
+
+            return Ok(eqClass);
+        }
+
+
+
+        #endregion
     }
 }
