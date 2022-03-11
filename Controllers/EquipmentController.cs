@@ -193,11 +193,11 @@ namespace EaTSWebAPI.Controllers
         {
             if (id == null)
             {
-                return await _db.EquipmentClass.Include(a => a.Equipments).ToListAsync();
+                return await _db.EquipmentClass.Include(u => u.EqupmentType).Include(a => a.Equipments).ToListAsync();
             }
             else
             {
-                var obj = await _db.EquipmentClass.Include(c => c.Equipments).AsNoTracking().Where(a => a.Id == id).FirstOrDefaultAsync();
+                var obj = await _db.EquipmentClass.Include(u => u.EqupmentType).Include(c => c.Equipments).AsNoTracking().Where(a => a.Id == id).FirstOrDefaultAsync();
                 if (obj == null)
                 {
                     return BadRequest("Класс не найден");
@@ -317,20 +317,18 @@ namespace EaTSWebAPI.Controllers
                 return BadRequest("Класс оборудования не найден в БД");
             }
 
-            var eqClass = new EquipmentClass
-            {
-                Id = oldObj.Id,
-                EqupmentType = type,
-                ShortName = obj.ShortName,
-                FullName = obj.FullName,
-                IsRepair = obj.IsRepair
-            };
+
+            oldObj.EqupmentType = type;
+            oldObj.ShortName = obj.ShortName;
+            oldObj.FullName = obj.FullName;
+            oldObj.IsRepair = obj.IsRepair;
+    
 
             ////////////////////////////////////////
-            _db.EquipmentClass.Update(eqClass);
+            _db.EquipmentClass.Update(oldObj);
             await _db.SaveChangesAsync();
 
-            return Ok(eqClass);
+            return Ok(oldObj);
         }
 
         /// <summary>
@@ -362,6 +360,201 @@ namespace EaTSWebAPI.Controllers
 
             return Ok("Объект удален из базы данных");
         }
+        #endregion
+
+        #region Виды оборудования
+        /// <summary>
+        /// Получить вид(ы) оборудования
+        /// </summary>
+        /// <returns></returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///        Equipment/Get/
+        ///     or
+        ///        Equipment/Get/1
+        ///
+        /// </remarks>
+        [Route("/Equipment/Get/{id?}")]
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<EquipmentKind>>> GetEquipment(int? id)
+        {
+            if (id == null)
+            {
+                return await _db.EquipmentKind.Include(u => u.EquipmentClass).ToListAsync();
+            }
+            else
+            {
+                var obj = await _db.EquipmentKind.Include(u => u.EquipmentClass).Where(a => a.Id == id).FirstOrDefaultAsync();
+                if (obj == null)
+                {
+                    return BadRequest("Вид оборудования не найден");
+                }
+                else
+                {
+                    return Ok(obj);
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Создать новый вид оборудования
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>объект Вид оборудования</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///        "equipmentclassId": 1,
+        ///        "name": "Арбалет-БЦ",
+        ///        "description": "Охранный извещатель для периметра",
+        ///        "price" : 89625,
+        ///        "isObsolete" : false
+        ///     }
+        ///     or
+        ///     {
+        ///         "equipmentclassId": 1,
+        ///         "name": "ПИОН-Т",
+        ///         "isObsolete" : true
+        ///     }
+        ///
+        /// </remarks>
+        [AuthorizeRoles(UserRole.Administrator)]
+        [Route("/Equipment/Create")]
+        [HttpPost]
+        public async Task<ActionResult> CreateEquipment(EquipmentKindVM obj)
+        {
+            if (obj == null)
+            {
+                return BadRequest("Object is null");
+            }
+
+            // Проверка на наличие класса в БД
+            var eqClass = _db.EquipmentClass.Find(obj.EquipmentClassId);
+            if (eqClass == null)
+            {
+                return BadRequest("Класс оборудования не найден в БД");
+            }
+
+            // Проверка на пустые строки
+            if (string.IsNullOrWhiteSpace(obj.Name))
+            {
+                return BadRequest("Object data is not correct (name is empty)");
+            }
+
+            if (_db.EquipmentKind.Where(a => a.Name == obj.Name).Any())
+            {
+                return BadRequest("Вид оборудования с таким именем уже существует в базе данных");
+            }
+
+            var equipment = new EquipmentKind
+            {
+                EquipmentClass = eqClass,
+                Name = obj.Name,
+                Description = obj.Description,
+                Price = obj.Price,
+                IsObsolete = obj.IsObsolete
+            };
+
+            ////////////////////////////////////////
+            _db.EquipmentKind.Add(equipment);
+            await _db.SaveChangesAsync();
+
+            return Ok(equipment);
+        }
+
+        /// <summary>
+        /// Изменить вид оборудования
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>объект Вид оборудования</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///        "id": 1,
+        ///        "equipmentclassId": 1,
+        ///        "name": "Арбалет-БЦ",
+        ///        "description": "Охранный извещатель для периметра",
+        ///        "price" : 89625,
+        ///        "isObsolete" : false
+        ///     }
+        ///
+        /// </remarks>
+        [AuthorizeRoles(UserRole.Administrator)]
+        [Route("/Equipment/Edit")]
+        [HttpPut]
+        public async Task<ActionResult> EditEquipment(EquipmentKindVM obj)
+        {
+            if (obj == null)
+            {
+                return BadRequest("Object is null");
+            }
+
+            // Проверка на наличие класса в БД
+            var eqClass = _db.EquipmentClass.Find(obj.EquipmentClassId);
+            if (eqClass == null)
+            {
+                return BadRequest("Класс оборудования не найден в БД");
+            }
+
+            // Проверка на пустые строки
+            if (string.IsNullOrWhiteSpace(obj.Name))
+            {
+                return BadRequest("Object data is not correct (name is empty)");
+            }
+
+            var oldObj = _db.EquipmentKind.AsNoTracking().Where(u => u.Id == obj.Id).FirstOrDefault();
+            if (oldObj == null)
+            {
+                return BadRequest("Оборудование не найдено в БД");
+            }
+
+            oldObj.EquipmentClass = eqClass;
+            oldObj.Name = obj.Name;
+            oldObj.Description = obj.Description;
+            oldObj.Price = obj.Price;
+            oldObj.IsObsolete = obj.IsObsolete;
+
+            ////////////////////////////////////////
+            _db.EquipmentKind.Update(oldObj);
+            await _db.SaveChangesAsync();
+
+            return Ok(oldObj);
+        }
+
+        /// <summary>
+        /// Удалить вид оборудования
+        /// </summary>
+        /// <param name="id">ИД</param>
+        /// <returns>объект Вид оборудования</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///        "id": 1
+        ///     }
+        ///
+        /// </remarks>
+        [AuthorizeRoles(UserRole.Administrator)]
+        [Route("/Equipment/Delete")]
+        [HttpDelete]
+        public async Task<ActionResult> DeleteEquipment(int id)
+        {
+            var obj = _db.EquipmentKind.Find(id);
+            if (obj == null)
+            {
+                return BadRequest("Объект не найден в базе данных");
+            }
+
+            _db.EquipmentKind.Remove(obj);
+            await _db.SaveChangesAsync();
+
+            return Ok("Объект удален из базы данных");
+        }
+
         #endregion
     }
 }
